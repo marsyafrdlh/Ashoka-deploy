@@ -5,7 +5,6 @@ import torch
 import numpy as np
 import cv2
 import os
-import h5py
 import ssl
 from urllib.request import urlopen
 
