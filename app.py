@@ -7,48 +7,52 @@ import cv2
 import ssl
 from urllib.request import urlopen
 
-# Load ImageNet class labels
-LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
-@st.cache
-def load_labels():
-    import requests
-    import json
-    response = requests.get(LABELS_URL)
-    return json.loads(response.text)
+# Fungsi untuk memuat model klasifikasi
+@st.cache_resource
+def load_classification_model():
+    # Misal menggunakan ResNet18 yang sudah dilatih pada ImageNet atau model kustom
+    model = models.resnet18(pretrained=True)
+    model.fc = torch.nn.Linear(model.fc.in_features, 2)  # 2 output untuk klasifikasi biner
+    model.load_state_dict(torch.load('model_normal_abnormal.pth', map_location=torch.device('cpu')))
+    model.eval()
+    return model
 
-labels = load_labels()
+# Muat model
+model = load_classification_model()
 
-# Streamlit app
-st.title("Image Classification with Streamlit")
-st.write("Upload an image to classify using a pretrained model.")
+# Define preprocessing sesuai dengan model
+preprocess = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
-# Upload image
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+# Aplikasi Streamlit
+st.title("Image Classification")
+st.write("Upload an image to classify as Normal or Abnormal.")
+
+# Upload gambar
+uploaded_file = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Load image
+    # Tampilkan gambar yang diunggah
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(image, caption="Gambar yang diunggah", use_column_width=True)
 
-    # Preprocess image
+    # Preprocess gambar
     input_tensor = preprocess(image)
     input_batch = input_tensor.unsqueeze(0)
 
-    # Check if CUDA is available and move the input and model to GPU
-    if torch.cuda.is_available():
-        input_batch = input_batch.to("cuda")
-        model.to("cuda")
-
-    # Perform inference
+    # Prediksi
     with torch.no_grad():
         output = model(input_batch)
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
+        normal_prob, abnormal_prob = probabilities
 
-    # Get top 5 predictions
-    probabilities = torch.nn.functional.softmax(output[0], dim=0)
-    top5_prob, top5_catid = torch.topk(probabilities, 5)
-
-    # Show results
-    st.write("Top 5 Predictions:")
-    for i in range(top5_prob.size(0)):
-        st.write(f"{labels[top5_catid[i]]}: {top5_prob[i].item():.2f}")
-    st.image(detected_img, caption="Detected Image", use_column_width=True)
+    # Menampilkan hasil
+    st.write(f"Normal Probability: {normal_prob.item():.2f}")
+    st.write(f"Abnormal Probability: {abnormal_prob.item():.2f}")
+    if abnormal_prob > normal_prob:
+        st.write("Prediction: **Abnormal**")
+    else:
+        st.write("Prediction: **Normal**")
