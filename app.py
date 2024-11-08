@@ -7,17 +7,27 @@ import cv2
 import ssl
 from urllib.request import urlopen
 
-# Load ImageNet class labels
-LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
-@st.cache
-def load_labels():
-    import requests
-    import json
-    response = requests.get(LABELS_URL)
-    return json.loads(response.text)
+# Load YOLO model
+@st.cache_resource
+def load_model():
+    ssl._create_default_https_context = ssl._create_unverified_context
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path='yolov5s.pt', force_reload=True)
+    return model
 
-labels = load_labels()
-
+# Object Detection function
+def detect_objects(image, model):
+    # Convert image to numpy array
+    img_array = np.array(image)
+    # Convert RGB to BGR format (OpenCV standard)
+    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    
+    # Perform inference
+    results = model(img_array)
+    # Get detection results
+    results_img = np.squeeze(results.render())  # Render the detected results on the image
+    
+    return results_img
+    
 # Streamlit app
 st.title("Image Classification with Streamlit")
 st.write("Upload an image to classify using a pretrained model.")
