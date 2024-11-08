@@ -52,7 +52,7 @@ if uploaded_file is not None:
     st.write("Processing...")
     
     # Load model
-    model = load_model()
+    model = main()
     
     # Perform object detection
     detected_img = detect_objects(image, model)
