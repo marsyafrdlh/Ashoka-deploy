@@ -12,7 +12,7 @@ from urllib.request import urlopen
 
 
 # Streamlit app
-st.title("Image Classification with Streamlit")
+st.title("Hypospadias Image Classification")
 st.write("Upload an image to classify using a pretrained model.")
 
 def main():
