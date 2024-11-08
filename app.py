@@ -7,52 +7,39 @@ import cv2
 import ssl
 from urllib.request import urlopen
 
-# Fungsi untuk memuat model klasifikasi
-@st.cache_resource
-def load_classification_model():
-    # Misal menggunakan ResNet18 yang sudah dilatih pada ImageNet atau model kustom
-    model = models.resnet18(pretrained=True)
-    model.fc = torch.nn.Linear(model.fc.in_features, 2)  # 2 output untuk klasifikasi biner
-    model.load_state_dict(torch.load('model_normal_abnormal.pth', map_location=torch.device('cpu')))
-    model.eval()
-    return model
+# Load ImageNet class labels
+LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
+@st.cache
+def load_labels():
+    import requests
+    import json
+    response = requests.get(LABELS_URL)
+    return json.loads(response.text)
 
-# Muat model
-model = load_classification_model()
+labels = load_labels()
 
-# Define preprocessing sesuai dengan model
-preprocess = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
-# Aplikasi Streamlit
-st.title("Image Classification")
-st.write("Upload an image to classify as Normal or Abnormal.")
-
-# Upload gambar
-uploaded_file = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png"])
+# Streamlit app
+st.title("Image Classification with Streamlit")
+st.write("Upload an image to classify using a pretrained model.")
 
 if uploaded_file is not None:
-    # Tampilkan gambar yang diunggah
+    # Open image using PIL
     image = Image.open(uploaded_file)
-    st.image(image, caption="Gambar yang diunggah", use_column_width=True)
+    
+    # Display uploaded image
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.write("")
+    st.write("Processing...")
+    
+    # Load model
+    model = load_model()
+    
+    # Perform object detection
+    detected_img = detect_objects(image, model)
+    
+    # Convert BGR to RGB for displaying with Streamlit
+    detected_img = cv2.cvtColor(detected_img, cv2.COLOR_BGR2RGB)
+    
+    # Display detected image
+    st.image(detected_img, caption="Detected Image", use_column_width=True)
 
-    # Preprocess gambar
-    input_tensor = preprocess(image)
-    input_batch = input_tensor.unsqueeze(0)
-
-    # Prediksi
-    with torch.no_grad():
-        output = model(input_batch)
-        probabilities = torch.nn.functional.softmax(output[0], dim=0)
-        normal_prob, abnormal_prob = probabilities
-
-    # Menampilkan hasil
-    st.write(f"Normal Probability: {normal_prob.item():.2f}")
-    st.write(f"Abnormal Probability: {abnormal_prob.item():.2f}")
-    if abnormal_prob > normal_prob:
-        st.write("Prediction: **Abnormal**")
-    else:
-        st.write("Prediction: **Normal**")
