@@ -27,7 +27,7 @@ def main():
         result = predict_class(image)
         st.write(result)
         st.pyplot(figure)
-        
+
 # Object Detection function
 def detect_objects(image, model):
     # Convert image to numpy array
@@ -41,3 +41,25 @@ def detect_objects(image, model):
     results_img = np.squeeze(results.render())  # Render the detected results on the image
     
     return results_img
+
+if uploaded_file is not None:
+    # Open image using PIL
+    image = Image.open(uploaded_file)
+    
+    # Display uploaded image
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.write("")
+    st.write("Processing...")
+    
+    # Load model
+    model = load_model()
+    
+    # Perform object detection
+    detected_img = detect_objects(image, model)
+    
+    # Convert BGR to RGB for displaying with Streamlit
+    detected_img = cv2.cvtColor(detected_img, cv2.COLOR_BGR2RGB)
+    
+    # Display detected image
+    st.image(detected_img, caption="Detected Image", use_column_width=True)
+
