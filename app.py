@@ -7,48 +7,55 @@ import cv2
 import ssl
 from urllib.request import urlopen
 
-# Load ImageNet class labels
-LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
-@st.cache
-def load_labels():
-    import requests
-    import json
-    response = requests.get(LABELS_URL)
-    return json.loads(response.text)
+# Definisikan kembali model yang sama dengan model yang telah dilatih
+# Misalnya, kita menggunakan ResNet18 untuk klasifikasi
+model = models.resnet18()
+model.fc = torch.nn.Linear(model.fc.in_features, 1)  # Misalnya output 1 neuron untuk klasifikasi biner
 
-labels = load_labels()
+# Muat state dictionary ke model
+model.load_state_dict(torch.load("model_normal_abnormal.pth", map_location=torch.device("cpu")))
 
-# Streamlit app
-st.title("Image Classification with Streamlit")
-st.write("Upload an image to classify using a pretrained model.")
+# Atur model ke mode evaluasi
+model.eval()
 
-# Upload image
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+# Define preprocessing sesuai dengan yang dilakukan saat melatih
+preprocess = transforms.Compose([
+    transforms.Resize((224, 224)),  # Ukuran input sesuai dengan model
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+# Streamlit app untuk klasifikasi gambar
+st.title("Deteksi Kondisi Normal dan Abnormal")
+st.write("Unggah gambar untuk mendeteksi apakah kondisinya normal atau abnormal.")
+
+# Upload gambar
+uploaded_file = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Load image
+    # Tampilkan gambar yang diunggah
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(image, caption="Gambar yang diunggah", use_column_width=True)
 
-    # Preprocess image
+    # Preprocessing gambar
     input_tensor = preprocess(image)
     input_batch = input_tensor.unsqueeze(0)
 
-    # Check if CUDA is available and move the input and model to GPU
+    # Pindahkan input dan model ke GPU jika tersedia
     if torch.cuda.is_available():
         input_batch = input_batch.to("cuda")
         model.to("cuda")
 
-    # Perform inference
+    # Prediksi
     with torch.no_grad():
         output = model(input_batch)
 
-    # Get top 5 predictions
-    probabilities = torch.nn.functional.softmax(output[0], dim=0)
-    top5_prob, top5_catid = torch.topk(probabilities, 5)
+    # Menggunakan sigmoid untuk mengubah keluaran ke probabilitas (jika model binary)
+    probability = torch.sigmoid(output).item()
 
-    # Show results
-    st.write("Top 5 Predictions:")
-    for i in range(top5_prob.size(0)):
-        st.write(f"{labels[top5_catid[i]]}: {top5_prob[i].item():.2f}")
-    st.image(detected_img, caption="Detected Image", use_column_width=True)
+    # Menampilkan hasil
+    if probability > 0.5:
+        st.write("Prediksi: **Abnormal** dengan probabilitas {:.2f}%".format(probability * 100))
+    else:
+        st.write("Prediksi: **Normal** dengan probabilitas {:.2f}%".format((1 - probability) * 100))
+
