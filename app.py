@@ -27,21 +27,17 @@ def main():
         result = predict_class(image)
         st.write(result)
         st.pyplot(figure)
-
-def predict_class(image):
-    tf.keras.models.load_model(r'/content/drive/Mydrive/Ashoka dataset')
-    model = tf.keras.Sequential([hub.KerasLayer(classifier_model)])    
-    test_image = image.resize((128, 128))
-    test_image = preprocessing.image.img_to_array(test_image)
-    test_image = test_image/255.0
-    test_image = np.expand_dims(test_image, axis = 0)
-    classnames = ['normal', 
-                 'abnormal']    
-    predictions = model.predict(test_image)
-    scores = tf.nn.softmax(predictions[0])
-    scores = scores.numpy()
-    image_class = classnames[np.argmax(scores)]
-    return result
-
-if __name__ == '__main__':
-    main()               
+        
+# Object Detection function
+def detect_objects(image, model):
+    # Convert image to numpy array
+    img_array = np.array(image)
+    # Convert RGB to BGR format (OpenCV standard)
+    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    
+    # Perform inference
+    results = model(img_array)
+    # Get detection results
+    results_img = np.squeeze(results.render())  # Render the detected results on the image
+    
+    return results_img
