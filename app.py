@@ -8,51 +8,60 @@ import ssl
 from urllib.request import urlopen
 
 
-# Load YOLO model
-@st.cache_resource
-def load_model():
-    ssl._create_default_https_context = ssl._create_unverified_context
-    model = torch.hub.load('ultralytics/yolov5', 'custom', path='yolov5s.pt', force_reload=True)
-    return model
+# Load pretrained model (misalnya, ResNet)
+model = models.resnet18(pretrained=True)
+model.eval()
 
-# Object Detection function
-def detect_objects(image, model):
-    # Convert image to numpy array
-    img_array = np.array(image)
-    # Convert RGB to BGR format (OpenCV standard)
-    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-    
-    # Perform inference
-    results = model(img_array)
-    # Get detection results
-    results_img = np.squeeze(results.render())  # Render the detected results on the image
-    
-    return results_img
+# Define preprocessing
+preprocess = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
-# Streamlit UI
-st.title("Ashoka Classification")
-st.write("Upload an image to perform object detection using a trained YOLO model.")
+# Load ImageNet class labels
+LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
+@st.cache
+def load_labels():
+    import requests
+    import json
+    response = requests.get(LABELS_URL)
+    return json.loads(response.text)
+
+labels = load_labels()
+
+# Streamlit app
+st.title("Image Classification with Streamlit")
+st.write("Upload an image to classify using a pretrained model.")
 
 # Upload image
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Choose an image...", type="jpg")
 
 if uploaded_file is not None:
-    # Open image using PIL
+    # Load image
     image = Image.open(uploaded_file)
-    
-    # Display uploaded image
     st.image(image, caption="Uploaded Image", use_column_width=True)
-    st.write("")
-    st.write("Processing...")
-    
-    # Load model
-    model = load_model()
-    
-    # Perform object detection
-    detected_img = detect_objects(image, model)
-    
-    # Convert BGR to RGB for displaying with Streamlit
-    detected_img = cv2.cvtColor(detected_img, cv2.COLOR_BGR2RGB)
-    
-    # Display detected image
+
+    # Preprocess image
+    input_tensor = preprocess(image)
+    input_batch = input_tensor.unsqueeze(0)
+
+    # Check if CUDA is available and move the input and model to GPU
+    if torch.cuda.is_available():
+        input_batch = input_batch.to("cuda")
+        model.to("cuda")
+
+    # Perform inference
+    with torch.no_grad():
+        output = model(input_batch)
+
+    # Get top 5 predictions
+    probabilities = torch.nn.functional.softmax(output[0], dim=0)
+    top5_prob, top5_catid = torch.topk(probabilities, 5)
+
+    # Show results
+    st.write("Top 5 Predictions:")
+    for i in range(top5_prob.size(0)):
+        st.write(f"{labels[top5_catid[i]]}: {top5_prob[i].item():.2f}")
     st.image(detected_img, caption="Detected Image", use_column_width=True)
