@@ -51,4 +51,46 @@ if uploaded_file is not None:
     st.write("Top 5 Predictions:")
     for i in range(top5_prob.size(0)):
         st.write(f"{labels[top5_catid[i]]}: {top5_prob[i].item():.2f}")
-    st.image(detected_img, caption="Detected Image", use_column_width=True)
+    st.image(detected_img, caption="Detected Image", use_column_width=True)# Load custom-trained model
+
+model = torch.load("model_hipospadia.pth")  # Model hipospadia yang telah dilatih
+model.eval()
+
+# Define preprocessing sesuai dengan model yang dilatih
+preprocess = transforms.Compose([
+    transforms.Resize((224, 224)),  # Sesuaikan ukuran sesuai dengan input model
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+# Streamlit app
+st.title("Hipospadia Detection in Children")
+st.write("Upload an image to classify if it shows signs of hypospadias.")
+
+# Upload image
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # Load image
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+
+    # Preprocess image
+    input_tensor = preprocess(image)
+    input_batch = input_tensor.unsqueeze(0)
+
+    # Check if CUDA is available and move the input and model to GPU
+    if torch.cuda.is_available():
+        input_batch = input_batch.to("cuda")
+        model.to("cuda")
+
+    # Perform inference
+    with torch.no_grad():
+        output = model(input_batch)
+
+    # Interpret the output (assuming binary classification: hipospadia vs non-hipospadia)
+    prediction = torch.sigmoid(output).item()  # Assuming single output neuron with sigmoid
+    if prediction > 0.5:
+        st.write("Prediction: normal")
+    else:
+        st.write("Prediction: abnormal")
