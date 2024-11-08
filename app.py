@@ -1,65 +1,48 @@
 import streamlit as st
-from PIL import Image,ImageOps
+from PIL import Image
 import matplotlib.pyplot as plt
-#import tensorflow as tf
-#import tensorflow_hub as hub
-import torch
+import tensorflow as tf
 import numpy as np
-import cv2
-import os
-import ssl
-from urllib.request import urlopen
+from tensorflow.keras.preprocessing import image
+import tensorflow_hub as hub
 
-
-# Streamlit app
-st.title("Image Classification with Streamlit")
-st.write("Upload an image to classify using a pretrained model.")
 
 def main():
-# Upload image
+    # Upload image
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         # Open image using PIL
-        image = Image.open(uploaded_file)
-        figure = plt.figure()
-        plt.imshow(image)
-        plt.axis('off')
-        result = predict_class(image)
+        img = Image.open(uploaded_file)
+        st.image(img, caption='Uploaded Image.', use_column_width=True)
+        result = predict_class(img)
         st.write(result)
-        st.pyplot(figure)
 
-# Object Detection function
-def detect_objects(image, model):
-    # Convert image to numpy array
-    img_array = np.array(image)
-    # Convert RGB to BGR format (OpenCV standard)
-    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-    
-    # Perform inference
-    results = model(img_array)
-    # Get detection results
-    results_img = np.squeeze(results.render())  # Render the detected results on the image
-    
-    return results_img
 
-if uploaded_file is not None:
-    # Open image using PIL
-    image = Image.open(uploaded_file)
+def predict_class(image):
+    # Load your trained model
+    model = tf.keras.models.load_model(r'/content/drive/MyDrive/Ashoka_dataset')
     
-    # Display uploaded image
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-    st.write("")
-    st.write("Processing...")
-    
-    # Load model
-    model = main()
-    
-    # Perform object detection
-    detected_img = detect_objects(image, model)
-    
-    # Convert BGR to RGB for displaying with Streamlit
-    detected_img = cv2.cvtColor(detected_img, cv2.COLOR_BGR2RGB)
-    
-    # Display detected image
-    st.image(detected_img, caption="Detected Image", use_column_width=True)
+    # Preprocess the image
+    test_image = image.resize((128, 128))  # Resize image to match model input
+    test_image = image.img_to_array(test_image)
+    test_image = test_image / 255.0  # Normalize image
+    test_image = np.expand_dims(test_image, axis=0)  # Add batch dimension
 
+    # Class names
+    classnames = ['normal', 'abnormal']
+    
+    # Make prediction
+    predictions = model.predict(test_image)
+    
+    # Convert predictions to softmax probabilities
+    scores = tf.nn.softmax(predictions[0])
+    scores = scores.numpy()
+    
+    # Get the predicted class
+    image_class = classnames[np.argmax(scores)]
+    
+    return f'Prediction: {image_class}'
+
+
+if __name__ == '__main__':
+    main()
