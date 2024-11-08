@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image,ImageOps
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import tensorflow_hub as hub
 import torch
 import numpy as np
 import cv2
