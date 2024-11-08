@@ -7,6 +7,8 @@ import cv2
 import ssl
 from urllib.request import urlopen
 
+# Load ImageNet class labels
+LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
 @st.cache
 def load_labels():
     import requests
