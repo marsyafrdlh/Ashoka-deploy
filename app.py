@@ -8,10 +8,6 @@ import ssl
 from urllib.request import urlopen
 
 
-# Load pretrained model (misalnya, ResNet)
-model = models.resnet18(pretrained=True)
-model.eval()
-
 # Define preprocessing
 preprocess = transforms.Compose([
     transforms.Resize(256),
