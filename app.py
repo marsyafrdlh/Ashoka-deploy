@@ -27,10 +27,13 @@ def detect_objects(image, model):
     results_img = np.squeeze(results.render())  # Render the detected results on the image
     
     return results_img
-    
+
 # Streamlit app
 st.title("Image Classification with Streamlit")
 st.write("Upload an image to classify using a pretrained model.")
+
+# Upload image
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     # Open image using PIL
