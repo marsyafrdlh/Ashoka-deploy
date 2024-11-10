@@ -1,8 +1,8 @@
 import streamlit as st
 from PIL import Image,ImageOps
 import matplotlib.pyplot as plt
-#import tensorflow as tf
-#import tensorflow_hub as hub
+import tensorflow as tf
+import tensorflow_hub as hub
 import torch
 import numpy as np
 import cv2
@@ -29,8 +29,8 @@ def main():
         st.pyplot(figure)
 
 def predict_class(image):
-    tf.keras.models.load_model(r'/content/drive/Mydrive/Ashoka dataset')
-    model = tf.keras.Sequential([hub.KerasLayer(classifier_model)])    
+    tensorflow.keras.models.load_model(r'/content/drive/Mydrive/Ashoka dataset')
+    model = tensorflow.keras.Sequential([hub.KerasLayer(classifier_model)])    
     test_image = image.resize((128, 128))
     test_image = preprocessing.image.img_to_array(test_image)
     test_image = test_image/255.0
