@@ -1,8 +1,8 @@
 import streamlit as st
 from PIL import Image,ImageOps
 import matplotlib.pyplot as plt
-#import tensorflow as tf
-#import tensorflow_hub as hub
+import tensorflow 
+import tensorflow_hub as hub
 import torch
 import numpy as np
 import cv2
@@ -38,7 +38,7 @@ def predict_class(image):
     classnames = ['normal', 
                  'abnormal']    
     predictions = model.predict(test_image)
-    scores = tf.nn.softmax(predictions[0])
+    scores = tensorflow.nn.softmax(predictions[0])
     scores = scores.numpy()
     image_class = classnames[np.argmax(scores)]
     return result
