@@ -1,58 +1,64 @@
 import streamlit as st
-import numpy as np
-import tensorflow as tf
 from PIL import Image
+import matplotlib.pyplot as plt
+import torch
+import torchvision.transforms as transforms
+import numpy as np
 
-# Load private model
+
+# Streamlit app
+st.title("Hypospadias Image Classification")
+st.write("Upload an image to classify using a pretrained model.")
+
+# Fungsi untuk memuat model
 @st.cache_resource
-def load_private_model():
-    return tf.keras.models.load_model('CNN_SisiAtas.h5')
+def load_model():
+    model_path = "myModel.h5"  # Ganti dengan path model PyTorch Anda
+    model = torch.load(model_path, map_location=torch.device('cpu'))
+    model.eval()  # Set model ke evaluasi mode
+    return model
 
-# Preprocess image for the private model
-def preprocess_private_dataset_image(image, target_size):
-    img = image.resize(target_size)
-    img_array = np.array(img).astype('float32') / 255.0
-    return np.expand_dims(img_array, axis=0)
+# Fungsi untuk preprocessing gambar
+def preprocess_image(image):
+    transform = transforms.Compose([
+        transforms.Resize((128, 128)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])  # Sesuaikan dengan preprocessing saat melatih model
+    ])
+    image = transform(image).unsqueeze(0)  # Tambahkan batch dimension
+    return image
 
-# Private model classification
-def private_model_classification():
-    st.title("Private Model Image Classification")
-    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png"])
-    
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file).convert('RGB')
-        st.image(image, caption='Uploaded Image', use_column_width=True)
-        
-        st.write("Classifying...")
-        try:
-            model = load_private_model()
-        except Exception as e:
-            st.error(f"Error loading model: {e}")
-            return
-        
-        # Resize and preprocess image for model
-        target_size = (224, 224)  # Update this if your model expects a different size
-        img_array = preprocess_private_dataset_image(image, target_size)
-        
-        # Predict using the model
-        predictions = model.predict(img_array)
-        predicted_class = np.argmax(predictions, axis=1)[0]
-        confidence = np.max(predictions)
-        
-        # Define class names
-        class_names = ['normal', 'abnormal']
-        
-        # Display prediction
-        st.write(f"Predicted Class: {class_names[predicted_class]}")
-        st.write(f"Confidence: {confidence * 100:.2f}%")
+# Fungsi untuk prediksi kelas
+def predict_class(image, model):
+    classnames = ['normal', 'abnormal']  # Sesuaikan dengan label kelas Anda
+    processed_image = preprocess_image(image)
+    with torch.no_grad():
+        outputs = model(processed_image)
+        _, predicted = torch.max(outputs, 1)
+        class_idx = predicted.item()
+        confidence = torch.softmax(outputs, dim=1)[0][class_idx].item() * 100
+    return f"Class: {classnames[class_idx]}, Confidence: {confidence:.2f}%"
 
-# Main function for Streamlit app
+# Fungsi utama aplikasi Streamlit
 def main():
-    st.sidebar.title("Navigation")
-    choice = st.sidebar.selectbox("Choose Model", ("Private Model",))
-    
-    if choice == "Private Model":
-        private_model_classification()
+    # Upload gambar
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    if uploaded_file is not None:
+        # Buka gambar menggunakan PIL
+        image = Image.open(uploaded_file).convert("RGB")
+        figure = plt.figure()
+        plt.imshow(image)
+        plt.axis('off')
+        
+        # Muat model
+        st.write("Loading model...")
+        model = load_model()
 
-if __name__ == "__main__":
+        # Prediksi kelas
+        st.write("Classifying image...")
+        result = predict_class(image, model)
+        st.write(result)
+        st.pyplot(figure)
+
+if __name__ == '__main__':
     main()
