@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms as transforms
 import numpy as np
+import os
+from tensorflow.keras.models import load_model
+model = load_model("myModel.h5")
 
 
 # Streamlit app
@@ -13,10 +16,17 @@ st.write("Upload an image to classify using a pretrained model.")
 # Fungsi untuk memuat model
 @st.cache_resource
 def load_model():
-    model_path = "myModel.h5"  # Ganti dengan path model PyTorch Anda
-    model = torch.load(model_path, map_location=torch.device('cpu'))
-    model.eval()  # Set model ke evaluasi mode
-    return model
+    model_path = "myModel.pth"  # Ganti dengan path model PyTorch Anda
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found at {model_path}. Please check the path.")
+        return None
+    try:
+        model = torch.load(model_path, map_location=torch.device('cpu'))
+        model.eval()  # Set model ke evaluasi mode
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
 # Fungsi untuk preprocessing gambar
 def preprocess_image(image):
@@ -53,6 +63,8 @@ def main():
         # Muat model
         st.write("Loading model...")
         model = load_model()
+        if model is None:
+            return  # Hentikan eksekusi jika model tidak dimuat
 
         # Prediksi kelas
         st.write("Classifying image...")
