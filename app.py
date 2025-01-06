@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms as transforms
 import numpy as np
+from tensorflow.keras.models import load_model
+model = load_model("myModel.h5")
 
 # Streamlit app
 st.title("Hypospadias Image Classification")
