@@ -3,6 +3,7 @@ from PIL import Image
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
+import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 from keras.utils import image_dataset_from_directory
