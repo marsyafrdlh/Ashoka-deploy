@@ -15,8 +15,8 @@ st.title("Hypospadias Image Classification")
 st.write("Upload an image to classify using a pretrained PyTorch model.")
 
 @st.cache_resource
-def load_model():
-    model_path = r"CNN_Model_Complete.pth"  # Adjust the file extension if needed
+def load_model(model_path):
+    model_path = r"CNN_Model.h5"  # Adjust the file extension if needed
     st.write(f"Loading Keras model from: {model_path}")
     try:
         model = load_model(model_path)  # Load the Keras model
