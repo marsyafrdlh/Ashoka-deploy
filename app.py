@@ -67,7 +67,8 @@ def main():
 
         # Muat model
         st.write("Loading model...")
-        model = load_model()
+        model_path ="CNN_Model.h5"
+        model = load_model(model_path)
         if model is None:
             return
 
