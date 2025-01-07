@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 import tensorflow as tf
 from tensorflow import keras
 from keras import layers
-from keras.utils import image_dataset_from_directory
+from tensorflow.keras.models import load_model
 
 
 # Streamlit app title and description
