@@ -17,7 +17,7 @@ model = load_cnn_model()
 class_names = ["Normal", "Abnormal"]
 
 # App title
-st.title()
+st.title("Image Classification with CNN Model")
 st.write("Upload an image to classify whether it is Normal or Abnormal.")
 
 # Upload file
