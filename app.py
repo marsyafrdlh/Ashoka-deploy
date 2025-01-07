@@ -26,7 +26,7 @@ class YourModel(nn.Module):
 # Fungsi untuk memuat model
 @st.cache_resource
 def load_model():
-    model_path = r"/CNN_Model_Complete.pth"
+    model_path = r"CNN_Model_Complete.pth"
     st.write(f"Loading model from: {model_path}")  # Debugging path
     try:
         # Jika model disimpan dengan state_dict
