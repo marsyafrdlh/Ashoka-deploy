@@ -35,8 +35,8 @@ def load_model():
     st.write(f"Loading model from: {model_path}")  # Debugging path
     try:
         # Jika model disimpan dengan state_dict
-        model = YourModel()
-        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        model = torch.load(model_path, map_location=torch.device('cpu'))
+
         
         # Jika model disimpan sebagai objek lengkap, gunakan:
         # model = torch.load(model_path, map_location=torch.device('cpu'))
@@ -62,13 +62,13 @@ def preprocess_image(image):
 
 # Fungsi untuk prediksi kelas
 def predict_class(image, model):
-    classnames = ['normal', 'abnormal']  # Sesuaikan label kelas
+    classnames = ['normal', 'abnormal']
     processed_image = preprocess_image(image)
-    with torch.no_grad():
-        outputs = model(processed_image)  # Prediksi
-        _, predicted = torch.max(outputs, 1)
-        class_idx = predicted.item()
-        confidence = torch.softmax(outputs, dim=1)[0][class_idx].item() * 100
+    processed_image = processed_image.numpy()  # Convert PyTorch tensor to NumPy array if needed
+    processed_image = processed_image.transpose((0, 2, 3, 1))  # Rearrange dimensions for Keras
+    outputs = model.predict(processed_image)
+    class_idx = outputs.argmax()
+    confidence = outputs[0][class_idx] * 100
     return classnames[class_idx], confidence
 
 # Fungsi utama aplikasi Streamlit
