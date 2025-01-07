@@ -27,6 +27,7 @@ class YourModel(nn.Module):
 @st.cache_resource
 def load_model():
     model_path = r"C:\Users\MARSHA\Documents\GitHub\Ashoka-deploy\CNN_Model_Complete.pth"
+    st.write(f"Loading model from: {model_path}")  # Debugging path
     try:
         # Jika model disimpan dengan state_dict
         model = YourModel()
@@ -35,10 +36,13 @@ def load_model():
         # Jika model disimpan sebagai objek lengkap, gunakan:
         # model = torch.load(model_path, map_location=torch.device('cpu'))
 
-        model.eval()  # Set model ke evaluasi mode
+        model.eval()
         return model
-    except Exception as e:
+    except FileNotFoundError as e:
         st.error(f"Error loading model: {e}")
+        return None
+    except Exception as e:
+        st.error(f"Unexpected error: {e}")
         return None
 
 # Fungsi untuk preprocessing gambar
@@ -60,7 +64,7 @@ def predict_class(image, model):
         _, predicted = torch.max(outputs, 1)
         class_idx = predicted.item()
         confidence = torch.softmax(outputs, dim=1)[0][class_idx].item() * 100
-    return f"Class: {classnames[class_idx]}, Confidence: {confidence:.2f}%"
+    return classnames[class_idx], confidence
 
 # Fungsi utama aplikasi Streamlit
 def main():
@@ -86,8 +90,8 @@ def main():
         # Prediksi kelas
         st.write("Classifying image...")
         try:
-            result = predict_class(image, model)
-            st.success(result)
+            result, confidence = predict_class(image, model)
+            st.write(f"Prediction: {result}, Confidence: {confidence:.2f}%")
         except Exception as e:
             st.error(f"Error during classification: {e}")
 
