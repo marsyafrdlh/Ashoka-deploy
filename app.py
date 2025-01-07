@@ -4,44 +4,22 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 import tensorflow as tf
+import numpy as np
 from tensorflow import keras
 from keras import layers
 from tensorflow.keras.models import load_model
-
+from tensorflow.keras.preprocessing.image import img_to_array
 
 # Streamlit app title and description
 st.title("Hypospadias Image Classification")
 st.write("Upload an image to classify using a pretrained PyTorch model.")
 
-# Definisikan ulang arsitektur model (sesuaikan dengan model Anda)
-class YourModel(nn.Module):
-    def __init__(self):
-        super(YourModel, self).__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
-        self.relu = nn.ReLU()
-        self.fc = nn.Linear(16 * 256 * 256, 2)  # Output sesuai jumlah kelas (2: 'normal' dan 'abnormal')
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.relu(x)
-        x = x.view(x.size(0), -1)  # Flatten
-        x = self.fc(x)
-        return x
-
-# Fungsi untuk memuat model
 @st.cache_resource
 def load_model():
-    model_path = r"CNN_Model_Complete.pth"
-    st.write(f"Loading model from: {model_path}")  # Debugging path
+    model_path = r"CNN_Model_Complete.pth"  # Adjust the file extension if needed
+    st.write(f"Loading Keras model from: {model_path}")
     try:
-        # Jika model disimpan dengan state_dict
-        model = torch.load(model_path, map_location=torch.device('cpu'))
-
-        
-        # Jika model disimpan sebagai objek lengkap, gunakan:
-        # model = torch.load(model_path, map_location=torch.device('cpu'))
-
-        model.eval()
+        model = load_model(model_path)  # Load the Keras model
         return model
     except FileNotFoundError as e:
         st.error(f"Error loading model: {e}")
@@ -50,26 +28,27 @@ def load_model():
         st.error(f"Unexpected error: {e}")
         return None
 
+
 # Fungsi untuk preprocessing gambar
+
 def preprocess_image(image):
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),  # Resize gambar ke ukuran 256x256
-        transforms.ToTensor(),         # Convert gambar ke tensor
-        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalisasi
-    ])
-    image = transform(image).unsqueeze(0)  # Tambahkan batch dimension
+    image = image.resize((256, 256))  # Resize to match model input size
+    image = img_to_array(image)  # Convert to NumPy array
+    image = image / 255.0  # Normalize to [0, 1]
+    image = np.expand_dims(image, axis=0)  # Add batch dimension
     return image
 
-# Fungsi untuk prediksi kelas
+
 def predict_class(image, model):
-    classnames = ['normal', 'abnormal']
+    classnames = ['normal', 'abnormal']  # Adjust labels as needed
     processed_image = preprocess_image(image)
     processed_image = processed_image.numpy()  # Convert PyTorch tensor to NumPy array if needed
-    processed_image = processed_image.transpose((0, 2, 3, 1))  # Rearrange dimensions for Keras
-    outputs = model.predict(processed_image)
-    class_idx = outputs.argmax()
+    processed_image = np.transpose(processed_image, (0, 2, 3, 1))  # Rearrange dimensions for Keras
+    outputs = model.predict(processed_image)  # Predict with Keras
+    class_idx = np.argmax(outputs, axis=1)[0]
     confidence = outputs[0][class_idx] * 100
     return classnames[class_idx], confidence
+
 
 # Fungsi utama aplikasi Streamlit
 def main():
