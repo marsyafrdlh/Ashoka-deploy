@@ -117,7 +117,7 @@ def load_model():
         model: Loaded Keras model.
     """
     try:
-        model = tf.keras.models.load_model('CNN_Model.h5', 
+        model = tf.keras.models.load_model('CNN_Model_Complete.pth', 
                                            custom_objects={'F1Score': F1Score})
         return model
     except Exception as e:
